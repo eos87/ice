@@ -65,7 +65,10 @@
 
     // Switch for whether paragraph breaks should be removed when the user is deleting over a
     // paragraph break while changes are tracked.
-    mergeBlocks: true
+    mergeBlocks: true,
+
+    // custom function to handle delete of empty blocks (delete and forwared delete)
+    customDeleteHandler: function(range, direction) {}
   };
 
   InlineChangeEditor = function (options) {
@@ -191,12 +194,12 @@
       }
 
     },
- 
+
     /*
      * Updates the list of changes to include all track tags found inside the element.
      */
     findTrackTags: function () {
-      
+
       // Grab class for each changeType
       var self = this, changeTypeClasses = [];
       for (var changeType in this.changeTypes) {
@@ -391,7 +394,7 @@
      */
     deleteContents: function (right, range) {
       var prevent = true;
-    var browser = ice.dom.browser();
+      var browser = ice.dom.browser();
 
       if (range) {
         this.selection.addRange(range);
@@ -401,106 +404,112 @@
 
       var changeid = this.startBatchChange(this.changeTypes['deleteType'].alias);
       if (range.collapsed === false) {
-    if(this._currentUserIceNode(range.startContainer.parentNode)){
-      this._deleteSelection(range);
-    } else {
-      this._deleteSelection(range);
-      if(browser["type"] === "mozilla"){
-        if(range.startContainer.parentNode.previousSibling){
-          range.setEnd(range.startContainer.parentNode.previousSibling, 0);
-          range.moveEnd(ice.dom.CHARACTER_UNIT, ice.dom.getNodeCharacterLength(range.endContainer));
+        if(this._currentUserIceNode(range.startContainer.parentNode)){
+          this._deleteSelection(range);
         } else {
-          range.setEndAfter(range.startContainer.parentNode);
+          this._deleteSelection(range);
+          if(browser["type"] === "mozilla"){
+            if(range.startContainer.parentNode.previousSibling){
+              range.setEnd(range.startContainer.parentNode.previousSibling, 0);
+              range.moveEnd(ice.dom.CHARACTER_UNIT, ice.dom.getNodeCharacterLength(range.endContainer));
+            } else {
+              range.setEndAfter(range.startContainer.parentNode);
+            }
+            range.collapse(false);
+          } else {
+            if(!this.visible(range.endContainer)){
+              range.setEnd(range.endContainer, range.endOffset - 1);
+              range.collapse(false);
+            }
+          }
         }
-        range.collapse(false);
-      } else {
-        if(!this.visible(range.endContainer)){
-          range.setEnd(range.endContainer, range.endOffset - 1);
-          range.collapse(false);
-        }
-      }
-    }
       } else {
         if (right) {
-      // RIGHT DELETE
-      if(browser["type"] === "mozilla"){
-        prevent = this._deleteRight(range);
-        // Handling track change show/hide
-        if(!this.visible(range.endContainer)){
-          if(range.endContainer.parentNode.nextSibling){
-//            range.setEnd(range.endContainer.parentNode.nextSibling, 0);
-            range.setEndBefore(range.endContainer.parentNode.nextSibling);
-          } else {
-            range.setEndAfter(range.endContainer);
+          // RIGHT DELETE
+          if(browser["type"] === "mozilla"){
+            prevent = this._deleteRight(range);
+            // Handling track change show/hide
+            if(!this.visible(range.endContainer)){
+              if(range.endContainer.parentNode.nextSibling){
+                // range.setEnd(range.endContainer.parentNode.nextSibling, 0);
+                range.setEndBefore(range.endContainer.parentNode.nextSibling);
+              } else {
+                range.setEndAfter(range.endContainer);
+              }
+              range.collapse(false);
+            }
           }
-          range.collapse(false);
-        }
-      }
-      else {
-        // Calibrate Cursor before deleting
-        if(range.endOffset === ice.dom.getNodeCharacterLength(range.endContainer)){
-          var next = range.startContainer.nextSibling;
-          if (ice.dom.is(next,  '.' + this._getIceNodeClass('deleteType'))) {
-            while(next){
+          else {
+            // Calibrate Cursor before deleting
+            if(range.endOffset === ice.dom.getNodeCharacterLength(range.endContainer)){
+              var next = range.startContainer.nextSibling;
               if (ice.dom.is(next,  '.' + this._getIceNodeClass('deleteType'))) {
-                next = next.nextSibling;
-                continue;
-              }
-              range.setStart(next, 0);
-              range.collapse(true);
-              break;
-            }
-          }
-        }
-
-        // Delete
-        prevent = this._deleteRight(range);
-
-        // Calibrate Cursor after deleting
-        if(!this.visible(range.endContainer)){
-          if (ice.dom.is(range.endContainer.parentNode,  '.' + this._getIceNodeClass('insertType') + ', .' + this._getIceNodeClass('deleteType'))) {
-//            range.setStart(range.endContainer.parentNode.nextSibling, 0);
-            range.setStartAfter(range.endContainer.parentNode);
-            range.collapse(true);
-          }
-        }
-      }
-    }
-        else {
-      // LEFT DELETE
-      if(browser["type"] === "mozilla"){
-        prevent = this._deleteLeft(range);
-        // Handling track change show/hide
-        if(!this.visible(range.startContainer)){
-          if(range.startContainer.parentNode.previousSibling){
-            range.setEnd(range.startContainer.parentNode.previousSibling, 0);
-          } else {
-            range.setEnd(range.startContainer.parentNode, 0);
-          }
-          range.moveEnd(ice.dom.CHARACTER_UNIT, ice.dom.getNodeCharacterLength(range.endContainer));
-          range.collapse(false);
-        }
-      }
-      else {
-        if(!this.visible(range.startContainer)){
-          if(range.endOffset === ice.dom.getNodeCharacterLength(range.endContainer)){
-            var prev = range.startContainer.previousSibling;
-            if (ice.dom.is(prev,  '.' + this._getIceNodeClass('deleteType'))) {
-              while(prev){
-                if (ice.dom.is(prev,  '.' + this._getIceNodeClass('deleteType'))) {
-                  prev = prev.prevSibling;
-                  continue;
+                while(next){
+                  if (ice.dom.is(next,  '.' + this._getIceNodeClass('deleteType'))) {
+                    next = next.nextSibling;
+                    continue;
+                  }
+                  range.setStart(next, 0);
+                  range.collapse(true);
+                  break;
                 }
-                range.setEndBefore(prev.nextSibling, 0);
-                range.collapse(false);
-                break;
+              }
+            }
+
+            // Delete
+            prevent = this._deleteRight(range);
+
+            // Calibrate Cursor after deleting
+            if(!this.visible(range.endContainer)){
+              if (ice.dom.is(range.endContainer.parentNode,  '.' + this._getIceNodeClass('insertType') + ', .' + this._getIceNodeClass('deleteType'))) {
+                //            range.setStart(range.endContainer.parentNode.nextSibling, 0);
+                range.setStartAfter(range.endContainer.parentNode);
+                range.collapse(true);
               }
             }
           }
         }
-        prevent = this._deleteLeft(range);
+        else {
+          // LEFT DELETE
+          if(browser["type"] === "mozilla"){
+            prevent = this._deleteLeft(range);
+            // Handling track change show/hide
+            if(!this.visible(range.startContainer)){
+              if(range.startContainer.parentNode.previousSibling){
+                range.setEnd(range.startContainer.parentNode.previousSibling, 0);
+              } else {
+                range.setEnd(range.startContainer.parentNode, 0);
+              }
+              range.moveEnd(ice.dom.CHARACTER_UNIT, ice.dom.getNodeCharacterLength(range.endContainer));
+              range.collapse(false);
+            }
+          }
+          else {
+            if(!this.visible(range.startContainer)){
+              if(range.endOffset === ice.dom.getNodeCharacterLength(range.endContainer)){
+                var prev = range.startContainer.previousSibling;
+                if (ice.dom.is(prev,  '.' + this._getIceNodeClass('deleteType'))) {
+                  while(prev){
+                    if (ice.dom.is(prev,  '.' + this._getIceNodeClass('deleteType'))) {
+                      prev = prev.prevSibling;
+                      continue;
+                    }
+                    range.setEndBefore(prev.nextSibling, 0);
+                    range.collapse(false);
+                    break;
+                  }
+                }
+              }
+            }
+            prevent = this._deleteLeft(range);
+          }
+        }
       }
-    }
+
+      if (prevent === false) {
+        // call custom function to handle delete
+        var direction = right ? 'right': 'left';
+        this.customDeleteHandler(range, direction);
       }
 
       this.selection.addRange(range);
@@ -941,7 +950,7 @@
         elements = ice.dom.getElementsBetween(bookmark.start, bookmark.end),
         b1 = ice.dom.parents(range.startContainer, this.blockEls.join(', '))[0],
         b2 = ice.dom.parents(range.endContainer, this.blockEls.join(', '))[0],
-        betweenBlocks = new Array(); 
+        betweenBlocks = new Array();
 
       for (var i = 0; i < elements.length; i++) {
         var elem = elements[i];
@@ -997,8 +1006,8 @@
       }
 
       bookmark.selectBookmark();
-//      range.collapse(false);
-  range.collapse(true);
+      //  range.collapse(false);
+      range.collapse(true);
     },
 
     // Delete
@@ -1151,6 +1160,7 @@
         initialOffset = range.startOffset,
         commonAncestor = range.commonAncestorContainer,
         lastSelectable, prevContainer;
+
       // If the current block is empty, then let the browser handle the key/event.
       if (isEmptyBlock) return false;
 
@@ -1182,14 +1192,14 @@
         if (initialOffset === 0) {
           prevContainer = ice.dom.getPrevContentNode(initialContainer, this.element);
         } else {
-        var newOffset = initialOffset;
-      var style;
-//      while(newOffset > 0){
-//        prevContainer = commonAncestor.childNodes[--newOffset];
-//        if(!ice.dom.hasClass(prevContainer, "del")) break;
-//        prevContainer = null;
-//      }
-      prevContainer = commonAncestor.childNodes[initialOffset-1];
+          var newOffset = initialOffset;
+          var style;
+          //      while(newOffset > 0){
+          //        prevContainer = commonAncestor.childNodes[--newOffset];
+          //        if(!ice.dom.hasClass(prevContainer, "del")) break;
+          //        prevContainer = null;
+          //      }
+          prevContainer = commonAncestor.childNodes[initialOffset-1];
         }
 
         // If the previous container is outside of ICE then do nothing.
@@ -1576,7 +1586,7 @@
         this._preventKeyPress = false;
         return;
       }
-      
+
       if (!this.pluginsManager.fireKeyPress(e)) return false;
 
       var c = null;
