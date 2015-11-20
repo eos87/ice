@@ -67,6 +67,10 @@
     // paragraph break while changes are tracked.
     mergeBlocks: true,
 
+    // in case we have external way to initialize editor, just set next variable as false
+    // and internal initializeEditor will be skipped
+    runInitializeEditor: true,
+
     // custom function to handle delete of empty blocks (delete and forwared delete)
     customDeleteHandler: function(range, direction) {}
   };
@@ -123,8 +127,10 @@
         });
       }
 
+      if (this.runInitializeEditor)
+        this.initializeEditor();
+
       this.initializeEnvironment();
-      this.initializeEditor();
       this.findTrackTags();
       this.initializeRange();
 
