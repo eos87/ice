@@ -175,14 +175,14 @@
 
         // Handle the case where the range conforms to (2) (noted in the comment above).
         if (container.nodeType === ice.dom.ELEMENT_NODE) {
-          if (container.hasChildNodes()) {
-            container = container.childNodes[offset];
+          if (container.hasChildNodes() && offset > 0) {
+            var lastChild = container.childNodes[offset - 1],
+              nextContainer = this.getLastSelectableChild(lastChild);
 
-            container = this.getPreviousTextNode(container);
+            container = (nextContainer) ? nextContainer : this.getPreviousTextNode(lastChild);
 
-            // Get the previous text container that is not an empty text node.
-            while (container && container.nodeType == ice.dom.TEXT_NODE && container.nodeValue === "") {
-              container = this.getPreviousTextNode(container);
+            if (! container) {
+              return;
             }
 
             offset = container.data.length - units;
@@ -196,9 +196,7 @@
         if (offset < 0) {
           // We need to move to a previous selectable container.
           while (offset < 0) {
-            var skippedBlockElem = [];
-
-            container = this.getPreviousTextNode(container, skippedBlockElem);
+            container = this.getPreviousTextNode(container);
 
             // We are at the beginning/out of the editable - break.
             if (!container) {
@@ -402,14 +400,14 @@
       };
 
       rangy.rangePrototype.getNextTextNode = function (container) {
-        if (container.nodeType === ice.dom.ELEMENT_NODE) {
+        if (container && container.nodeType === ice.dom.ELEMENT_NODE) {
           if (container.childNodes.length !== 0) {
             return this.getFirstSelectableChild(container);
           }
         }
 
         container = this.getNextContainer(container);
-        if (container.nodeType === ice.dom.TEXT_NODE) {
+        if (container && container.nodeType === ice.dom.TEXT_NODE) {
           return container;
         }
 
@@ -418,7 +416,7 @@
 
       rangy.rangePrototype.getPreviousTextNode = function (container, skippedBlockEl) {
         container = this.getPreviousContainer(container, skippedBlockEl);
-        if (container.nodeType === ice.dom.TEXT_NODE) {
+        if (container && container.nodeType === ice.dom.TEXT_NODE) {
           return container;
         }
 

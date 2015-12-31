@@ -8,7 +8,7 @@ IceCopyPastePlugin = function(ice_instance) {
   this._tmpNodeTagName = 'icepaste';
   this._pasteId = 'icepastediv';
   var self = this;
-  
+
   // API
 
   // 'formatted' - paste will be MS Word cleaned.
@@ -102,7 +102,7 @@ IceCopyPastePlugin.prototype = {
         this.setupPaste(true);
         break;
     }
-             
+
     return true;
   },
 
@@ -112,7 +112,7 @@ IceCopyPastePlugin.prototype = {
     var div = this.createDiv(this._pasteId),
         self = this,
         range = this._ice.getCurrentRange();
-    
+
     range.selectNodeContents(div);
     this._ice.selection.addRange(range);
 
@@ -143,7 +143,7 @@ IceCopyPastePlugin.prototype = {
     html = this.beforePasteClean.call(this, html);
 
     if(stripTags) {
-                    
+
       // Strip out change tracking tags.
       html = this._ice.getCleanContent(html);
       html = this.stripPaste(html);
@@ -176,7 +176,7 @@ IceCopyPastePlugin.prototype = {
       range.collapse(true);
       this._ice.selection.addRange(range);
       var prevBlock = range.startContainer;
-      
+
       // Paste all of the children in the fragment.
       while(fragment.firstChild) {
         if(fragment.firstChild.nodeType === 3 && !jQuery.trim(fragment.firstChild.nodeValue)) {
@@ -299,7 +299,7 @@ IceCopyPastePlugin.prototype = {
         self._ice.env.selection.addRange(range);
       }, 100);
     }, 0);
-    
+
     self._ice.env.selection.addRange(crange);
   },
 
@@ -324,7 +324,7 @@ IceCopyPastePlugin.prototype = {
     var self = this;
     this._tags = '';
     this._attributesMap = [];
-    
+
     ice.dom.each(this.preserve.split(','), function(i, tagAttr) {
       // Extract the tag and attributes list
       tagAttr.match(/(\w+)(\[(.+)\])?/);
@@ -394,7 +394,7 @@ IceCopyPastePlugin.prototype = {
 
     // Remove class, lang and style attributes.
     content = content.replace(/<(\w[^>]*) (lang)=([^ |>]*)([^>]*)/gi, "<$1$4");
-  
+
     return content;
   },
 
@@ -409,19 +409,13 @@ IceCopyPastePlugin.prototype = {
 
   _cleanup: function(moveTo) {
     try {
-      // Set focus back to ice element.
-      if (this._ice.env.frame)
-        this._ice.env.frame.contentWindow.focus();
-      else
-        this._ice.element.focus();
-
       moveTo = moveTo && moveTo.lastChild || moveTo || this._tmpNode;
       // Move the range to the end of moveTo so that the cursor will be at the end of the paste.
       var range = this._ice.getCurrentRange();
       range.setStartAfter(moveTo);
       range.collapse(true);
       this._ice.selection.addRange(range);
-      
+
       // Kill the tmp node.
       this._tmpNode.parentNode.removeChild(this._tmpNode);
       this._tmpNode = null;
