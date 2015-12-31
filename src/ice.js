@@ -410,8 +410,12 @@
 
       var changeid = this.startBatchChange(this.changeTypes['deleteType'].alias);
       if (range.collapsed === false) {
-        if(this._currentUserIceNode(range.startContainer.parentNode)){
-          this._deleteSelection(range);
+        if (this._currentUserIceNode(range.startContainer.parentNode)) {
+          // when it comes to same user insertNode, just let the native delete
+          // or the customDeleteHandler works, setting prevent as false
+          var insertNode = this.getIceNode(range.startContainer, 'insertType');
+          if (insertNode) prevent = false;
+          else this._deleteSelection(range);
         } else {
           this._deleteSelection(range);
           if(browser["type"] === "mozilla"){
@@ -1541,7 +1545,7 @@
           preventDefault = true;
           var range = this.getCurrentRange();
           this._moveRangeToValidTrackingPos(range, range.startContainer);
-          this.insert('\u00A0' , range);
+          this.insert('\u00A0', range);
           break;
         default:
           // Ignore key.
