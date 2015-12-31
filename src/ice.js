@@ -479,7 +479,7 @@
               prevent = this._deleteRight(range);
 
               // Calibrate Cursor after deleting
-              if(!this.visible(range.endContainer)){
+              if(range.endContainer && !this.visible(range.endContainer)){
                 if (ice.dom.is(range.endContainer.parentNode,  '.' + this._getIceNodeClass('insertType') + ', .' + this._getIceNodeClass('deleteType'))) {
                   //            range.setStart(range.endContainer.parentNode.nextSibling, 0);
                   range.setStartAfter(range.endContainer.parentNode);
@@ -1061,6 +1061,7 @@
         if (commonAncestor.childNodes.length > initialOffset) {
           var tempTextContainer = document.createTextNode(' ');
           commonAncestor.insertBefore(tempTextContainer, commonAncestor.childNodes[initialOffset]);
+          if (!tempTextContainer) return false;
           range.setStart(tempTextContainer, 1);
           range.collapse(true);
           returnValue = this._deleteRight(range);
@@ -1068,6 +1069,7 @@
           return returnValue;
         } else {
           nextContainer = ice.dom.getNextContentNode(commonAncestor, this.element);
+          if (!nextContainer) return false;
           range.setEnd(nextContainer, 0);
           range.collapse();
           return this._deleteRight(range);
@@ -1133,7 +1135,7 @@
         if (this.mergeBlocks && ice.dom.is(ice.dom.getBlockParent(nextContainer, this.element), this.blockEl)) {
           // Since the range is moved by character, it may have passed through empty blocks.
           // <p>text {RANGE.START}</p><p></p><p>{RANGE.END} text</p>
-          if (nextBlock !== ice.dom.getBlockParent(range.endContainer, this.element)) {
+          if (nextBlock && nextBlock !== ice.dom.getBlockParent(range.endContainer, this.element)) {
             range.setEnd(nextBlock, 0);
           }
           // The browsers like to auto-insert breaks into empty paragraphs - remove them.
@@ -1316,7 +1318,7 @@
         if (this.mergeBlocks && ice.dom.is(ice.dom.getBlockParent(prevContainer, this.element), this.blockEl)) {
           // Since the range is moved by character, it may have passed through empty blocks.
           // <p>text {RANGE.START}</p><p></p><p>{RANGE.END} text</p>
-          if (prevBlock !== ice.dom.getBlockParent(range.startContainer, this.element)) {
+          if (prevBlock && prevBlock !== ice.dom.getBlockParent(range.startContainer, this.element)) {
             range.setStart(prevBlock, prevBlock.childNodes.length);
           }
           // The browsers like to auto-insert breaks into empty paragraphs - remove them.
