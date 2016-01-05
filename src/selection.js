@@ -268,7 +268,7 @@
 
         if (container.nodeType === ice.dom.ELEMENT_NODE) {
           container = container.childNodes[offset];
-          if (container.nodeType !== ice.dom.TEXT_NODE) {
+          if (container && container.nodeType !== ice.dom.TEXT_NODE) {
             container = this.getNextTextNode(container);
           }
 

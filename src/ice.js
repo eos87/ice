@@ -286,9 +286,11 @@
       }
     },
   visible: function(el) {
-    if(el.nodeType === ice.dom.TEXT_NODE) el = el.parentNode;
+    if (el.nodeType === ice.dom.TEXT_NODE) el = el.parentNode;
+    if (!el) return false;
+
     var rect = el.getBoundingClientRect();
-    return ( rect.top > 0 && rect.left > 0);
+    return (rect.top > 0 && rect.left > 0);
   },
 
     /**
@@ -445,7 +447,7 @@
             prevent = false;
           } else {
             // RIGHT DELETE
-            if(browser["type"] === "mozilla"){
+            if (browser["type"] === "mozilla") {
               prevent = this._deleteRight(range);
               // Handling track change show/hide
               if(!this.visible(range.endContainer)){
@@ -460,7 +462,7 @@
             }
             else {
               // Calibrate Cursor before deleting
-              if(range.endOffset === ice.dom.getNodeCharacterLength(range.endContainer)){
+              if (range.endOffset === ice.dom.getNodeCharacterLength(range.endContainer)){
                 var next = range.startContainer.nextSibling;
                 if (ice.dom.is(next,  '.' + this._getIceNodeClass('deleteType'))) {
                   while(next){
@@ -479,7 +481,7 @@
               prevent = this._deleteRight(range);
 
               // Calibrate Cursor after deleting
-              if(range.endContainer && !this.visible(range.endContainer)){
+              if (!this.visible(range.endContainer)) {
                 if (ice.dom.is(range.endContainer.parentNode,  '.' + this._getIceNodeClass('insertType') + ', .' + this._getIceNodeClass('deleteType'))) {
                   //            range.setStart(range.endContainer.parentNode.nextSibling, 0);
                   range.setStartAfter(range.endContainer.parentNode);
@@ -528,7 +530,7 @@
 
       if (prevent === false) {
         // call custom function to handle delete
-        var direction = right ? 'right': 'left';
+        var direction = right ? 'right' : 'left';
         this.customDeleteHandler(range, direction);
       }
 
@@ -1042,8 +1044,14 @@
         commonAncestor = range.commonAncestorContainer,
         nextContainer, returnValue;
 
-      // If the current block is empty then let the browser handle the delete/event.
-      if (isEmptyBlock) return false;
+      // If the current block is empty, let's recalibrate the caret
+      // and then let the browser handle the delete/event.
+      if (isEmptyBlock) {
+        range.setEnd(nextBlock, 0);
+        range.moveEnd(ice.dom.CHARACTER_UNIT, 1);
+        range.moveEnd(ice.dom.CHARACTER_UNIT, -1);
+        return false;
+      }
 
       // Some bugs in Firefox and Webkit make the caret disappear out of text nodes, so we try to put them back in.
       if (commonAncestor.nodeType !== ice.dom.TEXT_NODE) {
@@ -1269,7 +1277,7 @@
             prevContainer = prevContainer.lastElementChild;
           }
           // Before putting the caret into the last selectable child, lets see if the last element is a stub element. If it is, we need to put the caret there manually.
-          if (prevContainer.lastChild && prevContainer.lastChild.nodeType !== ice.dom.TEXT_NODE && ice.dom.isStubElement(prevContainer.lastChild) && prevContainer.lastChild.tagName !== 'BR') {
+          if (prevContainer && prevContainer.lastChild && prevContainer.lastChild.nodeType !== ice.dom.TEXT_NODE && ice.dom.isStubElement(prevContainer.lastChild) && prevContainer.lastChild.tagName !== 'BR') {
             range.setStartAfter(prevContainer.lastChild);
             range.collapse(true);
             return true;
